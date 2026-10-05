@@ -191,7 +191,12 @@ function serveStatic(requestPath, response) {
     '.css': 'text/css; charset=utf-8',
     '.js': 'application/javascript; charset=utf-8',
     '.json': 'application/json; charset=utf-8',
-    '.svg': 'image/svg+xml'
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.ico': 'image/x-icon'
   };
   response.writeHead(200, { 'content-type': types[extension] || 'application/octet-stream' });
   fs.createReadStream(filePath).pipe(response);
