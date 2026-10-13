@@ -1,6 +1,6 @@
 # Daily Guru
 
-A calm, local app that opens with a short daily teaching from Buddhist/Hindu wisdom, listens to how your day went (by voice), and gives you gentle guru advice. It uses Kiro CLI via ACP.
+A calm, local app that opens with a short daily teaching from Buddhist/Hindu/Taoist wisdom, listens to how your day went (by voice), and gives you gentle guru advice. It uses Kiro CLI via ACP.
 
 ## Run
 

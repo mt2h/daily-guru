@@ -2,7 +2,7 @@
   "name": "daily-guru",
   "version": "0.1.0",
   "private": true,
-  "description": "A calm spiritual guru that shares daily Buddhist/Hindu teachings and gives advice about your day, powered by Kiro CLI ACP",
+  "description": "A calm spiritual guru that shares daily Buddhist/Hindu/Taoist teachings and gives advice about your day, powered by Kiro CLI ACP",
   "engines": {
     "node": ">=14.21"
   },

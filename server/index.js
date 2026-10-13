@@ -29,7 +29,7 @@ const server = http.createServer(async (request, response) => {
       assertLocalOrigin(request);
       const result = await acp.prompt([
         'Mode: teaching.',
-        'Share one short daily teaching from Buddhist or Hindu wisdom for the user starting their day.',
+        'Share one short daily teaching from Buddhist, Hindu or Taoist (Lao Tzu) wisdom for the user starting their day.',
         'Respond in Spanish unless the user clearly prefers English.',
         'Return only the teaching JSON object defined in the daily-guidance skill.'
       ].join('\n'));
