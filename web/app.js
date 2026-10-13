@@ -68,11 +68,22 @@ function renderError(message) {
   focusApp();
 }
 
+const TRADITION_THEMES = [
+  [/budd|budis/i, 'buddhism'],
+  [/hindu/i, 'hinduism'],
+  [/tao|lao|dao/i, 'taoism']
+];
+
+function traditionTheme(tradition) {
+  const match = TRADITION_THEMES.find(([pattern]) => pattern.test(String(tradition || '')));
+  return match ? match[1] : 'buddhism';
+}
+
 function renderMain() {
   const teaching = model.teaching;
   app.innerHTML = `
     <section class="guru-layout">
-      <article class="panel teaching-card">
+      <article class="panel teaching-card" data-tradition="${traditionTheme(teaching.tradition)}">
         <div class="teaching-head">
           <span class="meta-chip">${escapeHtml(teaching.tradition)}</span>
           <button class="btn btn-ghost listen-btn" id="hear-teaching" type="button">🔊 Escuchar</button>
