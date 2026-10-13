@@ -12,6 +12,9 @@
 <body>
   <div class="ambient ambient-one" aria-hidden="true"></div>
   <div class="ambient ambient-two" aria-hidden="true"></div>
+  <div class="ambient ambient-three" aria-hidden="true"></div>
+  <div class="ambient ambient-four" aria-hidden="true"></div>
+  <div class="ambient ambient-five" aria-hidden="true"></div>
 
   <div class="energy-field" aria-hidden="true">
     <span class="energy-stream energy-stream-one"></span>
@@ -33,9 +36,23 @@
         <small>Enseñanza y calma para tu día</small>
       </span>
     </a>
-    <div id="connection-status" class="status-pill" role="status">
-      <span class="status-dot"></span>
-      <span>Local</span>
+    <div class="header-tools">
+      <label class="voice-picker" title="Elige la voz del guru">
+        <span class="sr-only">Voz del guru</span>
+        <select id="voice-select" aria-label="Voz del guru">
+          <option value="">Voz automática</option>
+        </select>
+      </label>
+      <button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false" aria-label="Activar cuencos tibetanos" title="Cuencos tibetanos">
+        <span class="sound-icon" aria-hidden="true">
+          <i></i><i></i><i></i><i></i>
+        </span>
+        <span class="sound-label">Cuencos</span>
+      </button>
+      <div id="connection-status" class="status-pill" role="status">
+        <span class="status-dot"></span>
+        <span>Local</span>
+      </div>
     </div>
   </header>
 

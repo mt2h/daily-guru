@@ -11,12 +11,24 @@ const model = {
   advice: null,
   recognition: null,
   listening: false,
-  toastTimer: null
+  toastTimer: null,
+  voiceURI: localStorage.getItem('dg-voice') || ''
+};
+
+// Meditative Tibetan singing bowls generated with the Web Audio API (no external
+// files, so it works under the strict Content-Security-Policy).
+const ambientSound = {
+  context: null,
+  master: null,
+  timer: null,
+  playing: false
 };
 
 initialize();
 
 async function initialize() {
+  setupSoundToggle();
+  setupVoicePicker();
   renderLoading('El guru está preparando tu enseñanza del día…');
   try {
     const health = await api('/api/health');
@@ -219,6 +231,148 @@ function updateMicState(statusText) {
   if (status) status.textContent = statusText;
 }
 
+// --- Meditative ambient sound (Web Audio API) ---
+
+function setupSoundToggle() {
+  const button = document.querySelector('#sound-toggle');
+  if (!button) return;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) {
+    button.disabled = true;
+    button.title = 'Sonido no disponible en este navegador';
+    return;
+  }
+  button.addEventListener('click', toggleAmbientSound);
+}
+
+function toggleAmbientSound() {
+  if (ambientSound.playing) stopAmbientSound();
+  else startAmbientSound();
+}
+
+function startAmbientSound() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return;
+
+  if (!ambientSound.context) {
+    const context = new AudioCtx();
+    const master = context.createGain();
+    master.gain.value = 0;
+
+    // Gentle reverb-like warmth: a short feedback-free lowpass to soften the tails.
+    const tone = context.createBiquadFilter();
+    tone.type = 'lowpass';
+    tone.frequency.value = 2600;
+    tone.connect(context.destination);
+    master.connect(tone);
+
+    ambientSound.context = context;
+    ambientSound.master = master;
+    ambientSound.timer = null;
+  }
+
+  const { context, master } = ambientSound;
+  if (context.state === 'suspended') context.resume();
+  const now = context.currentTime;
+  master.gain.cancelScheduledValues(now);
+  master.gain.setValueAtTime(master.gain.value, now);
+  master.gain.linearRampToValueAtTime(0.9, now + 1.5);
+
+  ambientSound.playing = true;
+  scheduleSingingBowls();
+  updateSoundButton();
+}
+
+// Pentatonic set of calm, warm bowl pitches (A-based, soothing intervals).
+const BOWL_FREQUENCIES = [196.0, 220.0, 261.63, 293.66, 329.63];
+
+// Strikes a single Tibetan singing bowl: a few inharmonic partials with a soft
+// attack and a long, slowly fading tail — the hallmark of a real metal bowl.
+function strikeSingingBowl(frequency) {
+  const { context, master } = ambientSound;
+  if (!context || !master) return;
+  const now = context.currentTime;
+
+  const bowlGain = context.createGain();
+  bowlGain.gain.setValueAtTime(0, now);
+  bowlGain.connect(master);
+
+  // Inharmonic partials give the shimmering metallic bell character.
+  const partials = [
+    { ratio: 1.0, gain: 0.5 },
+    { ratio: 2.76, gain: 0.22 },
+    { ratio: 5.4, gain: 0.12 },
+    { ratio: 8.9, gain: 0.06 }
+  ];
+
+  const duration = 7.5;
+  partials.forEach((partial, index) => {
+    const oscillator = context.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = frequency * partial.ratio;
+
+    const partialGain = context.createGain();
+    partialGain.gain.value = partial.gain;
+
+    // Subtle vibrato on the fundamental for a living, breathing shimmer.
+    if (index === 0) {
+      const vibrato = context.createOscillator();
+      vibrato.frequency.value = 4.5;
+      const vibratoGain = context.createGain();
+      vibratoGain.gain.value = 1.3;
+      vibrato.connect(vibratoGain);
+      vibratoGain.connect(oscillator.frequency);
+      vibrato.start(now);
+      vibrato.stop(now + duration);
+    }
+
+    oscillator.connect(partialGain);
+    partialGain.connect(bowlGain);
+    oscillator.start(now);
+    oscillator.stop(now + duration);
+  });
+
+  // Soft mallet attack, then a long exponential decay (the singing tail).
+  const peak = 0.9;
+  bowlGain.gain.linearRampToValueAtTime(peak, now + 0.08);
+  bowlGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+}
+
+// Schedules bowls to ring at relaxed, slightly varied intervals.
+function scheduleSingingBowls() {
+  if (!ambientSound.playing) return;
+  const index = Math.floor(Math.random() * BOWL_FREQUENCIES.length);
+  strikeSingingBowl(BOWL_FREQUENCIES[index]);
+
+  const nextDelay = 5000 + Math.random() * 4000; // 5–9 seconds between strikes
+  ambientSound.timer = setTimeout(scheduleSingingBowls, nextDelay);
+}
+
+function stopAmbientSound() {
+  if (!ambientSound.context) return;
+  const { context, master } = ambientSound;
+  if (ambientSound.timer) {
+    clearTimeout(ambientSound.timer);
+    ambientSound.timer = null;
+  }
+  const now = context.currentTime;
+  master.gain.cancelScheduledValues(now);
+  master.gain.setValueAtTime(master.gain.value, now);
+  master.gain.linearRampToValueAtTime(0, now + 2);
+
+  ambientSound.playing = false;
+  updateSoundButton();
+}
+
+function updateSoundButton() {
+  const button = document.querySelector('#sound-toggle');
+  if (!button) return;
+  button.setAttribute('aria-pressed', String(ambientSound.playing));
+  button.setAttribute('aria-label', ambientSound.playing ? 'Silenciar cuencos tibetanos' : 'Activar cuencos tibetanos');
+  const label = button.querySelector('.sound-label');
+  if (label) label.textContent = ambientSound.playing ? 'Cuencos' : 'Cuencos';
+}
+
 // --- Speech synthesis (reading aloud) ---
 
 function teachingToSpeech(teaching) {
@@ -249,8 +403,11 @@ function speakText(text, options) {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'es-ES';
-    utterance.rate = 0.92;
-    utterance.pitch = 1;
+    // Unhurried, serene delivery. Keep pitch near natural — pushing it low is
+    // what makes the synthesizer sound metallic/robotic. The chosen voice
+    // (ideally "Grandpa" or a cloud voice) already carries the elder character.
+    utterance.rate = 0.88;
+    utterance.pitch = 0.95;
     const voices = window.speechSynthesis.getVoices();
     const voice = pickCalmSpanishVoice(voices);
     if (voice) utterance.voice = voice;
@@ -265,20 +422,106 @@ function speakText(text, options) {
   speak();
 }
 
+// Builds the voice dropdown so the user can pick the voice they like best.
+// Browser TTS quality varies wildly, so letting the user choose is the most
+// reliable fix for a bad default voice.
+function setupVoicePicker() {
+  const select = document.querySelector('#voice-select');
+  if (!select || !window.speechSynthesis) {
+    if (select) select.style.display = 'none';
+    return;
+  }
+
+  const fill = () => populateVoiceList(select);
+  fill();
+  window.speechSynthesis.addEventListener('voiceschanged', fill);
+
+  select.addEventListener('change', () => {
+    model.voiceURI = select.value;
+    if (model.voiceURI) localStorage.setItem('dg-voice', model.voiceURI);
+    else localStorage.removeItem('dg-voice');
+    // Preview the chosen voice right away.
+    speakText('Hola. Soy tu guru. Que tu día esté lleno de calma.');
+  });
+}
+
+function populateVoiceList(select) {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return;
+
+  const spanish = voices.filter((voice) => voice.lang && voice.lang.toLowerCase().startsWith('es'));
+  const list = spanish.length ? spanish : voices;
+
+  // Rank nicer voices toward the top of the list.
+  const rank = (voice) => {
+    const name = voice.name || '';
+    let value = 0;
+    if (voice.localService === false) value += 100;
+    if (/grandpa/i.test(name)) value += 60;
+    if (/google/i.test(name)) value += 55;
+    if (/rocko|reed|eddy|flo|sandy|shelley/i.test(name)) value += 30;
+    if (/m[oó]nica|paulina/i.test(name)) value += 20;
+    if (/espeak|compact|eloquence|pico/i.test(name)) value -= 50;
+    return value;
+  };
+  const ordered = list.slice().sort((a, b) => rank(b) - rank(a));
+
+  const current = model.voiceURI;
+  select.innerHTML = '<option value="">Voz automática</option>';
+  ordered.forEach((voice) => {
+    const option = document.createElement('option');
+    option.value = voice.voiceURI;
+    const quality = voice.localService === false ? ' ✦' : '';
+    option.textContent = `${voice.name} (${voice.lang})${quality}`;
+    if (voice.voiceURI === current) option.selected = true;
+    select.appendChild(option);
+  });
+}
+
 function pickCalmSpanishVoice(voices) {
+  // If the user explicitly chose a voice, always honor it.
+  if (model.voiceURI) {
+    const chosen = (voices || []).find((voice) => voice.voiceURI === model.voiceURI);
+    if (chosen) return chosen;
+  }
   const spanish = (voices || []).filter((voice) => voice.lang && voice.lang.toLowerCase().startsWith('es'));
   const pool = spanish.length ? spanish : (voices || []);
   if (!pool.length) return null;
 
-  const roboticPattern = /espeak|festival|pico|flite|mbrola|robo/i;
-  const naturalPattern = /google|natural|neural|premium|enhanced|online/i;
+  // Ordered wish-list of voices that actually sound good, best first.
+  // "Grandpa" is a warm elderly male voice — perfect for a wise guru — and
+  // Google/online voices are the most natural when available (e.g. Chrome).
+  const preferredByName = [
+    /grandpa/i,
+    /google.*espa|espa.*google/i,
+    /microsoft.*(álvaro|alvaro|dario|dar[ií]o|jorge|elvira|dalia|online|natural)/i,
+    /(álvaro|alvaro|jorge|diego|carlos|enrique|gonzalo|pablo)/i, // natural-ish male voices
+    /rocko|reed|eddy/i,                                           // newer Siri "novelty" voices
+    /m[oó]nica|paulina/i                                          // decent default local voices
+  ];
+
+  // Low-quality engines that sound robotic — avoid these.
+  const roboticPattern = /espeak|festival|pico|flite|mbrola|robo|compact|eloquence/i;
+
   const score = (voice) => {
+    const name = voice.name || '';
     let value = 0;
-    if (naturalPattern.test(voice.name || '')) value += 10;
-    if (voice.localService === false) value += 3;
-    if (roboticPattern.test(voice.name || '')) value -= 20;
+
+    // Rank by position in the wish-list (earlier = much better).
+    for (let i = 0; i < preferredByName.length; i += 1) {
+      if (preferredByName[i].test(name)) {
+        value += (preferredByName.length - i) * 20;
+        break;
+      }
+    }
+
+    // Cloud/neural voices are consistently the most human-sounding.
+    if (voice.localService === false) value += 25;
+    if (roboticPattern.test(name)) value -= 60;
+
     return value;
   };
+
   return pool.slice().sort((a, b) => score(b) - score(a))[0];
 }
 
