@@ -51,7 +51,15 @@ web/
 
 ## Voice
 
-Reading the teaching and advice aloud uses `SpeechSynthesis` (Spanish voice when available). Telling the guru about your day uses `SpeechRecognition`/`webkitSpeechRecognition` with `es-ES`. If voice input is not available, type your day into the field instead.
+Reading the teaching and advice aloud uses the browser's own `SpeechSynthesis`
+(no OS/system TTS). Pick any installed voice from the "Voz" dropdown in the
+header; your choice is remembered. For the best Spanish voices on Linux, use
+**Chrome or Brave**, which bundle their own "Google español" voices. Firefox on
+Linux relies on the system `speech-dispatcher` and may expose no voices.
+
+Telling the guru about your day uses `SpeechRecognition`/`webkitSpeechRecognition`
+with `es-ES` (available in Chrome/Brave). If voice input is not available, type
+your day into the field instead.
 
 ## Configuration
 
