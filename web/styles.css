@@ -507,6 +507,36 @@ h1, h2, h3, p { margin-top: 0; }
 .advice-list li { margin-bottom: 6px; }
 .advice-closing { margin-top: 16px; color: var(--accent); line-height: 1.5; }
 
+/* Daily practice card */
+.practice-card {
+  padding: clamp(24px, 4vw, 40px);
+  border-color: var(--border-strong);
+}
+.practice-card::after { animation-duration: 6.5s; animation-delay: -3s; }
+.practice-loading {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  min-height: 160px;
+  color: var(--muted);
+}
+.practice-loading p { margin: 0; }
+.practice-title {
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+.practice-purpose { color: #d9d2ee; line-height: 1.6; }
+.practice-steps {
+  margin: 16px 0 0;
+  padding-left: 22px;
+  color: #e7e3f3;
+  line-height: 1.7;
+}
+.practice-steps li { margin-bottom: 8px; padding-left: 4px; }
+.practice-steps li::marker { color: var(--primary); font-weight: 700; }
+
 .busy-overlay {
   position: fixed;
   z-index: 50;

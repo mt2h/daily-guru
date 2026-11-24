@@ -25,10 +25,17 @@ No `npm install` is required: the project uses only modules bundled with Node.js
 1. You open the app. It requests a daily teaching from the local server.
 2. The server starts `kiro-cli acp --agent daily-guru` when needed.
 3. The guru returns a short teaching (read aloud automatically).
-4. You tell the guru about your day, by voice or text.
-5. The guru returns gentle, practical advice connected to the wisdom.
+4. A "Daily practice" card loads below the teaching (see below).
+5. You tell the guru about your day, by voice or text.
+6. The guru returns gentle, practical advice connected to the wisdom.
 
 By default the app listens exclusively on `127.0.0.1` and never sends Kiro credentials to the browser.
+
+## Daily practice
+
+Each day the guru proposes one practice of 5 to 20 minutes with steps, an intention for the day, and a safety note. The tradition rotates by date (day of the year): Kriya Yoga, Buddhism, Taoism, Zen. The server caches the practice in memory per day, so reloading the page does not change it. The cache is cleared when the server restarts. The card has a "Listen" button.
+
+Kriya Yoga practices are limited to beginner-safe techniques (natural breath awareness, soft breathing, mantra, meditation, self-inquiry). Advanced techniques that are normally received through initiation from a teacher are never proposed.
 
 ## Architecture
 
@@ -38,7 +45,10 @@ By default the app listens exclusively on `127.0.0.1` and never sends Kiro crede
 └── skills/daily-guidance/SKILL.md
 server/
 ├── acp-client.js
-└── index.js
+├── index.js
+├── practice.js
+├── practice.test.js
+└── text.js
 web/
 ├── app.js
 ├── index.html

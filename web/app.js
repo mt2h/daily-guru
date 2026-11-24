@@ -9,6 +9,7 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 const model = {
   teaching: null,
   advice: null,
+  practice: null,
   recognition: null,
   listening: false,
   toastTimer: null,
@@ -105,6 +106,8 @@ function renderMain() {
         ${teaching.source ? `<p class="source">${escapeHtml(teaching.source)}</p>` : ''}
       </article>
 
+      <div id="practice-slot"></div>
+
       <article class="panel day-card">
         <p class="eyebrow">Cuéntale a tu guru</p>
         <h2>¿Cómo estuvo tu día?</h2>
@@ -133,7 +136,56 @@ function renderMain() {
   });
 
   if (model.advice) renderAdvice(model.advice);
+  loadPractice();
   focusApp();
+}
+
+// The practice loads in the background so the teaching is never delayed.
+async function loadPractice() {
+  const slot = document.querySelector('#practice-slot');
+  if (!slot) return;
+  if (model.practice) {
+    renderPractice(model.practice);
+    return;
+  }
+
+  slot.innerHTML = `
+    <article class="panel practice-card practice-loading">
+      <span class="spinner"></span>
+      <p>El guru está preparando tu práctica de hoy…</p>
+    </article>`;
+  try {
+    const result = await api('/api/practice', { method: 'POST', body: {} });
+    model.practice = result.practice;
+    renderPractice(model.practice);
+  } catch (error) {
+    slot.innerHTML = `
+      <article class="panel practice-card">
+        <p class="eyebrow">Práctica del día</p>
+        <p class="muted">${escapeHtml(error.message)}</p>
+        <button class="btn btn-ghost listen-btn" id="retry-practice" type="button">Intentar de nuevo</button>
+      </article>`;
+    document.querySelector('#retry-practice').addEventListener('click', loadPractice);
+  }
+}
+
+function renderPractice(practice) {
+  const slot = document.querySelector('#practice-slot');
+  if (!slot) return;
+  slot.innerHTML = `
+    <article class="panel practice-card" data-tradition="${escapeHtml(practice.traditionKey)}">
+      <div class="teaching-head">
+        <span class="meta-chip">${escapeHtml(practice.tradition)} · ${escapeHtml(practice.durationMinutes)} min</span>
+        <button class="btn btn-ghost listen-btn" id="hear-practice" type="button">🔊 Escuchar</button>
+      </div>
+      <p class="eyebrow">Práctica del día</p>
+      <h2 class="practice-title">${escapeHtml(practice.title)}</h2>
+      ${practice.purpose ? `<p class="practice-purpose">${escapeHtml(practice.purpose)}</p>` : ''}
+      <ol class="practice-steps">${practice.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join('')}</ol>
+      ${practice.intention ? `<div class="reflection"><strong>Intención del día</strong><p>${escapeHtml(practice.intention)}</p></div>` : ''}
+      ${practice.safetyNote ? `<p class="source">${escapeHtml(practice.safetyNote)}</p>` : ''}
+    </article>`;
+  document.querySelector('#hear-practice').addEventListener('click', () => speakText(practiceToSpeech(model.practice)));
 }
 
 async function askAdvice() {
@@ -257,6 +309,19 @@ function updateMicState(statusText) {
 function teachingToSpeech(teaching) {
   if (!teaching) return '';
   return [teaching.title, teaching.teaching, teaching.reflection].filter(Boolean).join('. ');
+}
+
+function practiceToSpeech(practice) {
+  if (!practice) return '';
+  const steps = (practice.steps || []).map((step, index) => `Paso ${index + 1}. ${step}`);
+  return [
+    `Práctica del día. ${practice.title}`,
+    practice.purpose,
+    `Dura unos ${practice.durationMinutes} minutos`,
+    ...steps,
+    practice.intention,
+    practice.safetyNote
+  ].filter(Boolean).join('. ');
 }
 
 function adviceToSpeech(advice) {
