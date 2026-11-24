@@ -536,6 +536,64 @@ h1, h2, h3, p { margin-top: 0; }
 }
 .practice-steps li { margin-bottom: 8px; padding-left: 4px; }
 .practice-steps li::marker { color: var(--primary); font-weight: 700; }
+.practice-actions { margin-top: 20px; display: flex; justify-content: flex-end; }
+.practice-actions .btn:disabled { opacity: 0.6; cursor: progress; }
+
+.back-btn { justify-self: start; border: 1px solid var(--border); }
+
+/* Home: two cards, the user chooses what the guru prepares */
+.home { display: grid; gap: 22px; }
+.home-intro h1 {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.home-card {
+  --art: none;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 360px;
+  padding: clamp(22px, 3vw, 32px);
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  background-image:
+    linear-gradient(180deg, rgba(8, 8, 18, 0.05) 0%, rgba(8, 8, 18, 0.55) 55%, rgba(8, 8, 18, 0.92) 100%),
+    var(--art);
+  background-size: cover;
+  background-position: left center;
+  background-repeat: no-repeat;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.home-card:hover, .home-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--primary);
+}
+.home-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.home-card-teaching { --art: url("budism.png"); }
+.home-card-break    { --art: url("hinduism.png"); }
+.home-card-body { display: grid; gap: 8px; }
+.home-card-title {
+  font-size: clamp(1.3rem, 2.4vw, 1.8rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.home-card-text { color: #d9d2ee; line-height: 1.55; }
+.home-card-cta { margin-top: 6px; color: var(--accent); font-weight: 700; }
+
+@media (max-width: 760px) {
+  .home-cards { grid-template-columns: 1fr; }
+  .home-card { min-height: 280px; }
+}
 
 .busy-overlay {
   position: fixed;

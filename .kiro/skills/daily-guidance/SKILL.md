@@ -45,36 +45,35 @@ Return this exact JSON shape and nothing else (no Markdown fences):
   "closing": "A short calming closing line"
 }
 
-## Practice mode
+## Practice mode (active break)
 
-The application chooses the tradition of the day (Kriya Yoga, Buddhism, Taoism or Zen) and tells you which one. Use exactly that tradition. Give one practice the user can do today, as a small step on the path toward awakening.
+The practice is an active break ("pausa activa"): a short exercise of movement and breath the user asks for on demand, wherever they are (desk, home, office). The application chooses the tradition (Kriya Yoga, Buddhism, Taoism or Zen) and tells you which one. Use exactly that tradition. It may also list recent breaks; never repeat them, choose a different exercise.
 
-1. Keep it doable in 5 to 20 minutes with no equipment, written for a beginner.
-2. Give 3 to 7 short, concrete steps in the order they are done.
-3. Close with one intention to carry through the day.
-4. Add a short safety note (for example, stop if dizzy, never force the breath).
+1. Keep it doable in 2 to 5 minutes, on the spot, with no equipment, written for a beginner. Standing or seated.
+2. Mix gentle movement with breath: neck, shoulder, wrist and back stretches, chest opening, slow qigong-style movement, soft breathing, a short moment of stillness.
+3. Give 3 to 6 short, concrete steps in the order they are done.
+4. Add a short safety note (for example, move slowly, stop if there is pain or dizziness, never force the breath).
 
 Ideas by tradition:
 
-- Kriya Yoga: beginner-safe practices only, such as gentle natural breath awareness, soft even-count breathing, silent mantra repetition (for example, "Om"), seated meditation, and self-inquiry ("Who am I?"). Never describe advanced Kriya techniques that are normally received through initiation from a teacher (for example, the Kriya pranayama sequences, khechari mudra or breath retention). Never ask the user to hold or force the breath. If the user wants deeper Kriya, suggest a qualified teacher in the note.
-- Buddhism: mindfulness of breathing, loving-kindness (metta), mindful walking, body scan, gratitude for a meal.
-- Taoism: gentle qigong, standing like a tree, wu wei (non-forcing) in one task, contemplation of nature, listening to silence.
-- Zen: zazen counting breaths, kinhin (walking meditation), doing one daily task with full attention, sweeping or washing as practice.
+- Kriya Yoga: beginner-safe exercises only, such as gentle natural breath awareness, soft even-count breathing, shoulder and spine movements with the breath, silent mantra repetition (for example, "Om"), and a short moment of self-inquiry ("Who am I?"). Never describe advanced Kriya techniques that are normally received through initiation from a teacher (for example, the Kriya pranayama sequences, khechari mudra or breath retention). Never ask the user to hold or force the breath. If the user wants deeper Kriya, suggest a qualified teacher in the note.
+- Buddhism: mindful stretching, mindfulness of breathing, loving-kindness (metta) for a few breaths, body scan, mindful walking around the room.
+- Taoism: gentle qigong, standing like a tree, shaking out the body, "lifting the sky" arm movements, listening to silence.
+- Zen: a few breaths of zazen counting, kinhin (slow walking), stretching with full attention, sitting upright and still.
 
 Return this exact JSON shape and nothing else (no Markdown fences):
 
 {
   "mode": "practice",
   "tradition": "Kriya Yoga, Buddhism, Taoism or Zen",
-  "title": "Short title of the practice",
-  "purpose": "One sentence on what this practice cultivates",
-  "durationMinutes": 10,
+  "title": "Short title of the break",
+  "purpose": "One sentence on what this break relaxes or cultivates",
+  "durationMinutes": 3,
   "steps": ["Step 1", "Step 2", "Step 3"],
-  "intention": "One short intention for the day",
   "safetyNote": "One short safety or gentleness note"
 }
 
-`durationMinutes` is a number from 5 to 20.
+`durationMinutes` is a number from 2 to 5.
 
 ## General rules
 

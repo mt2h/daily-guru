@@ -2,8 +2,7 @@
 
 const { parseJsonObject, cleanText } = require('./text');
 
-// Daily rotation order. The tradition of the day is derived from the date so
-// it is predictable and never repeats on consecutive days.
+// Rotation order for the active breaks.
 const TRADITIONS = ['kriya', 'buddhism', 'taoism', 'zen'];
 
 const TRADITION_LABELS = {
@@ -13,19 +12,12 @@ const TRADITION_LABELS = {
   zen: 'Zen'
 };
 
-const MIN_MINUTES = 5;
-const MAX_MINUTES = 20;
+const MIN_MINUTES = 2;
+const MAX_MINUTES = 5;
+const DEFAULT_MINUTES = 3;
 const MIN_STEPS = 3;
-const MAX_STEPS = 7;
-
-function pad(number) {
-  return String(number).padStart(2, '0');
-}
-
-// Local calendar date as YYYY-MM-DD (the cache key and rotation input).
-function dateKey(date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
+const MAX_STEPS = 6;
+const MAX_RECENT_TITLES = 5;
 
 // 1-based day of the year using calendar arithmetic in UTC, so daylight
 // saving changes cannot shift the result.
@@ -35,8 +27,31 @@ function dayOfYear(date) {
   return Math.round((current - start) / 86400000) + 1;
 }
 
-function traditionForDate(date) {
-  return TRADITIONS[(dayOfYear(date) - 1) % TRADITIONS.length];
+// Index in TRADITIONS where the rotation starts on a given date.
+function startIndexForDate(date) {
+  return (dayOfYear(date) - 1) % TRADITIONS.length;
+}
+
+// Returns a function that yields the next tradition on every call. The first
+// call of the day is predictable (derived from the date); every later call
+// moves one step forward so consecutive breaks never share a tradition.
+function createTraditionRotator(date) {
+  let index = startIndexForDate(date || new Date());
+  return function nextTradition() {
+    const tradition = TRADITIONS[index];
+    index = (index + 1) % TRADITIONS.length;
+    return tradition;
+  };
+}
+
+// Cleans the titles of recent breaks sent by the browser, so they can be
+// placed in a prompt safely.
+function cleanRecentTitles(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((title) => cleanText(title, 160))
+    .filter(Boolean)
+    .slice(-MAX_RECENT_TITLES);
 }
 
 function normalizePractice(rawText, tradition) {
@@ -44,59 +59,30 @@ function normalizePractice(rawText, tradition) {
   const steps = Array.isArray(raw.steps)
     ? raw.steps.map((step) => cleanText(step, 400)).filter(Boolean).slice(0, MAX_STEPS)
     : [];
-  if (steps.length < MIN_STEPS) throw new Error('El guru no entregó una práctica válida');
+  if (steps.length < MIN_STEPS) throw new Error('El guru no entregó una pausa válida');
 
   const minutes = Math.round(Number(raw.durationMinutes));
   const durationMinutes = Number.isFinite(minutes)
     ? Math.min(MAX_MINUTES, Math.max(MIN_MINUTES, minutes))
-    : 10;
+    : DEFAULT_MINUTES;
 
   return {
     mode: 'practice',
     // The tradition always comes from the server rotation, never from the model.
     tradition: TRADITION_LABELS[tradition] || TRADITION_LABELS.zen,
     traditionKey: TRADITION_LABELS[tradition] ? tradition : 'zen',
-    title: cleanText(raw.title, 160) || 'Práctica del día',
+    title: cleanText(raw.title, 160) || 'Pausa activa',
     purpose: cleanText(raw.purpose, 400),
     durationMinutes,
     steps,
-    intention: cleanText(raw.intention, 300),
     safetyNote: cleanText(raw.safetyNote, 300)
-  };
-}
-
-// Creates a per-day cache. Concurrent requests for the same day share one
-// pending promise, and failures are not cached so the user can retry.
-function createPracticeCache() {
-  const entries = new Map();
-
-  return function getPractice(date, fetchPractice) {
-    const tradition = traditionForDate(date);
-    const key = `${dateKey(date)}:${tradition}`;
-
-    if (entries.has(key)) return entries.get(key);
-
-    const pending = Promise.resolve()
-      .then(() => fetchPractice(tradition))
-      .catch((error) => {
-        entries.delete(key);
-        throw error;
-      });
-    entries.set(key, pending);
-
-    // Keep only the current day in memory.
-    for (const existing of entries.keys()) {
-      if (!existing.startsWith(`${dateKey(date)}:`)) entries.delete(existing);
-    }
-    return pending;
   };
 }
 
 module.exports = {
   TRADITIONS,
   TRADITION_LABELS,
-  dateKey,
-  traditionForDate,
-  normalizePractice,
-  createPracticeCache
+  createTraditionRotator,
+  cleanRecentTitles,
+  normalizePractice
 };

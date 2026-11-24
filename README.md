@@ -22,20 +22,20 @@ No `npm install` is required: the project uses only modules bundled with Node.js
 
 ## Flow
 
-1. You open the app. It requests a daily teaching from the local server.
-2. The server starts `kiro-cli acp --agent daily-guru` when needed.
-3. The guru returns a short teaching (read aloud automatically).
-4. A "Daily practice" card loads below the teaching (see below).
-5. You tell the guru about your day, by voice or text.
-6. The guru returns gentle, practical advice connected to the wisdom.
+1. You open the app. A home screen shows two cards, "Daily teaching" and "Active break". Nothing is requested from Kiro yet.
+2. You choose one. Only then does the local server start `kiro-cli acp --agent daily-guru` (if needed) and request that content.
+3. The teaching or the active break appears. Reading aloud only happens when you press "Listen".
+4. Below it you can tell the guru about your day, by voice or text.
+5. The guru returns gentle, practical advice connected to the wisdom.
+6. "Back" returns to the home screen; content already generated is kept and not requested again.
 
 By default the app listens exclusively on `127.0.0.1` and never sends Kiro credentials to the browser.
 
-## Daily practice
+## Active break
 
-Each day the guru proposes one practice of 5 to 20 minutes with steps, an intention for the day, and a safety note. The tradition rotates by date (day of the year): Kriya Yoga, Buddhism, Taoism, Zen. The server caches the practice in memory per day, so reloading the page does not change it. The cache is cleared when the server restarts. The card has a "Listen" button.
+An on-demand exercise of 2 to 5 minutes (movement and breath, done on the spot, no equipment) with 3 to 6 steps and a safety note. Each press of "Otra pausa" requests a new one. The tradition rotates on every request (Kriya Yoga, Buddhism, Taoism, Zen), starting from a tradition derived from the date. The browser sends the titles of the last five breaks so the guru does not repeat them. The rotation lives in server memory and restarts when the server restarts. Nothing is cached. The card has a "Listen" button.
 
-Kriya Yoga practices are limited to beginner-safe techniques (natural breath awareness, soft breathing, mantra, meditation, self-inquiry). Advanced techniques that are normally received through initiation from a teacher are never proposed.
+Kriya Yoga exercises are limited to beginner-safe techniques (natural breath awareness, soft breathing, mantra, meditation, self-inquiry). Advanced techniques that are normally received through initiation from a teacher are never proposed.
 
 ## Architecture
 
