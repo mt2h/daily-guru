@@ -7,9 +7,13 @@ const liveRegion = document.querySelector('#live-region');
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 const model = {
+  view: 'home',
   teaching: null,
   advice: null,
   practice: null,
+  recentBreaks: [],
+  breakLoading: false,
+  dayText: '',
   recognition: null,
   listening: false,
   toastTimer: null,
@@ -40,18 +44,12 @@ initialize();
 
 async function initialize() {
   setupVoicePicker();
-  renderLoading('El guru está preparando tu enseñanza del día…');
   try {
     const health = await api('/api/health');
     updateConnection(health.acp);
-    const result = await api('/api/teaching', { method: 'POST', body: {} });
-    model.teaching = result.teaching;
-    updateConnection('ready');
-    renderMain();
-    // Read the teaching aloud as soon as it appears.
-    speakText(teachingToSpeech(model.teaching), { silent: true });
+    renderHome();
   } catch (error) {
-    renderError(error.message);
+    renderError(error.message, initialize);
     updateConnection('stopped');
   }
 }
@@ -64,19 +62,96 @@ function renderLoading(text) {
     </section>`;
 }
 
-function renderError(message) {
+function renderError(message, retry, backToHome) {
   app.innerHTML = `
     <section class="panel completion">
       <div>
         <div class="completion-mark">!</div>
         <p class="eyebrow">Algo interrumpió la calma</p>
-        <h2>No pudimos preparar tu enseñanza</h2>
+        <h2>No pudimos preparar tu momento</h2>
         <p class="lead">${escapeHtml(message)}</p>
-        <button class="btn btn-primary" id="retry-load">Intentar de nuevo</button>
+        <button class="btn btn-primary" id="retry-load" type="button">Intentar de nuevo</button>
+        ${backToHome ? '<button class="btn btn-ghost" id="error-home" type="button">← Volver</button>' : ''}
       </div>
     </section>`;
-  document.querySelector('#retry-load').addEventListener('click', initialize);
+  document.querySelector('#retry-load').addEventListener('click', retry);
+  if (backToHome) document.querySelector('#error-home').addEventListener('click', renderHome);
   focusApp();
+}
+
+// --- Home: the user chooses what to do; nothing is requested before that ---
+
+function renderHome() {
+  stopRecognition();
+  model.view = 'home';
+  app.innerHTML = `
+    <section class="home" aria-labelledby="home-title">
+      <div class="home-intro">
+        <p class="eyebrow">Daily Guru</p>
+        <h1 id="home-title">¿Qué necesitas ahora?</h1>
+        <p class="muted">Elige una opción. El guru la prepara solo cuando tú lo pides.</p>
+      </div>
+      <div class="home-cards">
+        <button class="panel home-card home-card-teaching" id="choose-teaching" type="button">
+          <span class="home-card-body">
+            <span class="eyebrow">Enseñanza del día</span>
+            <span class="home-card-title">Una enseñanza para tu día</span>
+            <span class="home-card-text">Sabiduría budista, hindú o taoísta, con una reflexión breve.</span>
+            <span class="home-card-cta">Abrir →</span>
+          </span>
+        </button>
+        <button class="panel home-card home-card-break" id="choose-break" type="button">
+          <span class="home-card-body">
+            <span class="eyebrow">Pausa activa</span>
+            <span class="home-card-title">Un ejercicio de 2 a 5 minutos</span>
+            <span class="home-card-text">Movimiento y respiración de Kriya Yoga, budismo, taoísmo o zen, cuando lo necesites.</span>
+            <span class="home-card-cta">Empezar →</span>
+          </span>
+        </button>
+      </div>
+    </section>`;
+  document.querySelector('#choose-teaching').addEventListener('click', showTeaching);
+  document.querySelector('#choose-break').addEventListener('click', showBreak);
+  focusApp();
+}
+
+function backButtonHtml() {
+  return '<button class="btn btn-ghost back-btn" id="back-home" type="button">← Volver</button>';
+}
+
+function bindBackButton() {
+  document.querySelector('#back-home').addEventListener('click', () => {
+    saveDayText();
+    renderHome();
+  });
+}
+
+function saveDayText() {
+  const textarea = document.querySelector('#day-input');
+  if (textarea) model.dayText = textarea.value;
+}
+
+async function showTeaching() {
+  model.view = 'teaching';
+  if (model.teaching) {
+    renderTeachingView();
+    return;
+  }
+  renderLoading('El guru está preparando tu enseñanza del día…');
+  try {
+    const result = await api('/api/teaching', { method: 'POST', body: {} });
+    model.teaching = result.teaching;
+    updateConnection('ready');
+    if (model.view === 'teaching') renderTeachingView();
+  } catch (error) {
+    renderError(error.message, showTeaching, true);
+  }
+}
+
+async function showBreak() {
+  model.view = 'break';
+  renderBreakView();
+  if (!model.practice) await requestBreak();
 }
 
 const TRADITION_THEMES = [
@@ -90,24 +165,10 @@ function traditionTheme(tradition) {
   return match ? match[1] : 'buddhism';
 }
 
-function renderMain() {
-  const teaching = model.teaching;
-  app.innerHTML = `
-    <section class="guru-layout">
-      <article class="panel teaching-card" data-tradition="${traditionTheme(teaching.tradition)}">
-        <div class="teaching-head">
-          <span class="meta-chip">${escapeHtml(teaching.tradition)}</span>
-          <button class="btn btn-ghost listen-btn" id="hear-teaching" type="button">🔊 Escuchar</button>
-        </div>
-        <p class="eyebrow">Enseñanza del día</p>
-        <h1 class="teaching-title">${escapeHtml(teaching.title)}</h1>
-        <p class="teaching-text">${escapeHtml(teaching.teaching)}</p>
-        ${teaching.reflection ? `<div class="reflection"><strong>Reflexión</strong><p>${escapeHtml(teaching.reflection)}</p></div>` : ''}
-        ${teaching.source ? `<p class="source">${escapeHtml(teaching.source)}</p>` : ''}
-      </article>
-
-      <div id="practice-slot"></div>
-
+// Day card ("tell the guru about your day") and advice slot, shared by the
+// teaching and break screens.
+function dayCardHtml() {
+  return `
       <article class="panel day-card">
         <p class="eyebrow">Cuéntale a tu guru</p>
         <h2>¿Cómo estuvo tu día?</h2>
@@ -123,50 +184,116 @@ function renderMain() {
         </div>
       </article>
 
-      <div id="advice-slot"></div>
-    </section>`;
+      <div id="advice-slot"></div>`;
+}
 
+function bindDayCard() {
   const micButton = document.querySelector('#mic-button');
   if (!SpeechRecognition) micButton.disabled = true;
   micButton.addEventListener('click', toggleRecognition);
   document.querySelector('#send-day').addEventListener('click', askAdvice);
-  document.querySelector('#hear-teaching').addEventListener('click', () => speakText(teachingToSpeech(model.teaching)));
-  document.querySelector('#day-input').addEventListener('keydown', (event) => {
+  const textarea = document.querySelector('#day-input');
+  textarea.value = model.dayText;
+  textarea.addEventListener('keydown', (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') askAdvice();
   });
+  if (model.advice) renderAdvice(model.advice, { scroll: false });
+}
 
-  if (model.advice) renderAdvice(model.advice);
-  loadPractice();
+function renderTeachingView() {
+  const teaching = model.teaching;
+  app.innerHTML = `
+    <section class="guru-layout">
+      ${backButtonHtml()}
+      <article class="panel teaching-card" data-tradition="${traditionTheme(teaching.tradition)}">
+        <div class="teaching-head">
+          <span class="meta-chip">${escapeHtml(teaching.tradition)}</span>
+          <button class="btn btn-ghost listen-btn" id="hear-teaching" type="button">🔊 Escuchar</button>
+        </div>
+        <p class="eyebrow">Enseñanza del día</p>
+        <h1 class="teaching-title">${escapeHtml(teaching.title)}</h1>
+        <p class="teaching-text">${escapeHtml(teaching.teaching)}</p>
+        ${teaching.reflection ? `<div class="reflection"><strong>Reflexión</strong><p>${escapeHtml(teaching.reflection)}</p></div>` : ''}
+        ${teaching.source ? `<p class="source">${escapeHtml(teaching.source)}</p>` : ''}
+      </article>
+      ${dayCardHtml()}
+    </section>`;
+
+  bindBackButton();
+  document.querySelector('#hear-teaching').addEventListener('click', () => speakText(teachingToSpeech(model.teaching)));
+  bindDayCard();
   focusApp();
 }
 
-// The practice loads in the background so the teaching is never delayed.
-async function loadPractice() {
+function renderBreakView() {
+  app.innerHTML = `
+    <section class="guru-layout">
+      ${backButtonHtml()}
+      <div id="practice-slot"></div>
+      ${dayCardHtml()}
+    </section>`;
+
+  bindBackButton();
+  bindDayCard();
+  if (model.practice) renderPractice(model.practice);
+  else renderBreakLoading();
+  focusApp();
+}
+
+function renderBreakLoading() {
   const slot = document.querySelector('#practice-slot');
   if (!slot) return;
-  if (model.practice) {
-    renderPractice(model.practice);
-    return;
-  }
-
   slot.innerHTML = `
     <article class="panel practice-card practice-loading">
       <span class="spinner"></span>
-      <p>El guru está preparando tu práctica de hoy…</p>
+      <p>El guru está preparando tu pausa activa…</p>
     </article>`;
+}
+
+// Asks for a new active break. Each call returns a different exercise; the
+// titles of recent breaks are sent so the guru does not repeat them.
+async function requestBreak() {
+  if (model.breakLoading) return;
+  model.breakLoading = true;
+  setBreakButtonBusy(true);
+  if (!model.practice) renderBreakLoading();
   try {
-    const result = await api('/api/practice', { method: 'POST', body: {} });
+    const result = await api('/api/practice', { method: 'POST', body: { recent: model.recentBreaks } });
     model.practice = result.practice;
-    renderPractice(model.practice);
+    model.recentBreaks = [...model.recentBreaks, result.practice.title].slice(-5);
+    updateConnection('ready');
+    if (model.view === 'break') renderPractice(model.practice);
   } catch (error) {
-    slot.innerHTML = `
-      <article class="panel practice-card">
-        <p class="eyebrow">Práctica del día</p>
-        <p class="muted">${escapeHtml(error.message)}</p>
-        <button class="btn btn-ghost listen-btn" id="retry-practice" type="button">Intentar de nuevo</button>
-      </article>`;
-    document.querySelector('#retry-practice').addEventListener('click', loadPractice);
+    if (model.view === 'break') {
+      if (model.practice) {
+        showError(error.message);
+      } else {
+        renderBreakError(error.message);
+      }
+    }
+  } finally {
+    model.breakLoading = false;
+    setBreakButtonBusy(false);
   }
+}
+
+function renderBreakError(message) {
+  const slot = document.querySelector('#practice-slot');
+  if (!slot) return;
+  slot.innerHTML = `
+    <article class="panel practice-card">
+      <p class="eyebrow">Pausa activa</p>
+      <p class="muted">${escapeHtml(message)}</p>
+      <button class="btn btn-ghost listen-btn" id="retry-practice" type="button">Intentar de nuevo</button>
+    </article>`;
+  document.querySelector('#retry-practice').addEventListener('click', requestBreak);
+}
+
+function setBreakButtonBusy(busy) {
+  const button = document.querySelector('#another-break');
+  if (!button) return;
+  button.disabled = busy;
+  button.textContent = busy ? 'Preparando otra pausa…' : '↻ Otra pausa';
 }
 
 function renderPractice(practice) {
@@ -178,14 +305,18 @@ function renderPractice(practice) {
         <span class="meta-chip">${escapeHtml(practice.tradition)} · ${escapeHtml(practice.durationMinutes)} min</span>
         <button class="btn btn-ghost listen-btn" id="hear-practice" type="button">🔊 Escuchar</button>
       </div>
-      <p class="eyebrow">Práctica del día</p>
+      <p class="eyebrow">Pausa activa</p>
       <h2 class="practice-title">${escapeHtml(practice.title)}</h2>
       ${practice.purpose ? `<p class="practice-purpose">${escapeHtml(practice.purpose)}</p>` : ''}
       <ol class="practice-steps">${practice.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join('')}</ol>
-      ${practice.intention ? `<div class="reflection"><strong>Intención del día</strong><p>${escapeHtml(practice.intention)}</p></div>` : ''}
       ${practice.safetyNote ? `<p class="source">${escapeHtml(practice.safetyNote)}</p>` : ''}
+      <div class="practice-actions">
+        <button class="btn btn-primary" id="another-break" type="button">↻ Otra pausa</button>
+      </div>
     </article>`;
   document.querySelector('#hear-practice').addEventListener('click', () => speakText(practiceToSpeech(model.practice)));
+  document.querySelector('#another-break').addEventListener('click', requestBreak);
+  setBreakButtonBusy(model.breakLoading);
 }
 
 async function askAdvice() {
@@ -212,7 +343,7 @@ async function askAdvice() {
   }
 }
 
-function renderAdvice(advice) {
+function renderAdvice(advice, options) {
   const slot = document.querySelector('#advice-slot');
   slot.innerHTML = `
     <article class="panel advice-card">
@@ -226,7 +357,7 @@ function renderAdvice(advice) {
       ${advice.closing ? `<p class="advice-closing">${escapeHtml(advice.closing)}</p>` : ''}
     </article>`;
   document.querySelector('#hear-advice').addEventListener('click', () => speakText(adviceToSpeech(model.advice)));
-  slot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (!options || options.scroll !== false) slot.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // --- Speech recognition (voice input) ---
@@ -319,7 +450,6 @@ function practiceToSpeech(practice) {
     practice.purpose,
     `Dura unos ${practice.durationMinutes} minutos`,
     ...steps,
-    practice.intention,
     practice.safetyNote
   ].filter(Boolean).join('. ');
 }

@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { AcpClient } = require('./acp-client');
 const { parseJsonObject, cleanText } = require('./text');
-const { TRADITION_LABELS, dateKey, normalizePractice, createPracticeCache } = require('./practice');
+const { TRADITION_LABELS, createTraditionRotator, cleanRecentTitles, normalizePractice } = require('./practice');
 
 const projectRoot = path.resolve(__dirname, '..');
 const webRoot = path.join(projectRoot, 'web');
@@ -16,7 +16,7 @@ const acp = new AcpClient({
   agent: 'daily-guru',
   command: process.env.KIRO_CLI_PATH
 });
-const getDailyPractice = createPracticeCache();
+const nextTradition = createTraditionRotator(new Date());
 
 const server = http.createServer(async (request, response) => {
   setSecurityHeaders(response);
@@ -41,19 +41,28 @@ const server = http.createServer(async (request, response) => {
 
     if (request.method === 'POST' && url.pathname === '/api/practice') {
       assertLocalOrigin(request);
-      const today = new Date();
-      const practice = await getDailyPractice(today, async (tradition) => {
-        const result = await acp.prompt([
-          'Mode: practice.',
-          `Tradition of the day: ${TRADITION_LABELS[tradition]} (${tradition}).`,
-          `Date: ${dateKey(today)}.`,
-          'Give one short daily practice the user can do today to move along the path toward awakening.',
-          'Respond in Spanish unless the user clearly prefers English.',
-          'Return only the practice JSON object defined in the daily-guidance skill.'
-        ].join('\n'));
-        return normalizePractice(result.text, tradition);
-      });
-      return sendJson(response, 200, { practice });
+      const body = await readJsonBody(request);
+      const recentTitles = cleanRecentTitles(body.recent);
+      const tradition = nextTradition();
+      const prompt = [
+        'Mode: practice.',
+        `Tradition for this break: ${TRADITION_LABELS[tradition]} (${tradition}).`,
+        'Give one short active break (pausa activa) the user can do right now, where they are.'
+      ];
+      if (recentTitles.length) {
+        prompt.push(
+          'Do not repeat these recent breaks, choose a different exercise:',
+          '<recent_titles>',
+          ...recentTitles,
+          '</recent_titles>'
+        );
+      }
+      prompt.push(
+        'Respond in Spanish unless the user clearly prefers English.',
+        'Return only the practice JSON object defined in the daily-guidance skill.'
+      );
+      const result = await acp.prompt(prompt.join('\n'));
+      return sendJson(response, 200, { practice: normalizePractice(result.text, tradition) });
     }
 
     if (request.method === 'POST' && url.pathname === '/api/advice') {
