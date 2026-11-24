@@ -45,35 +45,36 @@ Return this exact JSON shape and nothing else (no Markdown fences):
   "closing": "A short calming closing line"
 }
 
-## Practice mode (active break)
+## Practice mode (conscious pause)
 
-The practice is an active break ("pausa activa"): a short exercise of movement and breath the user asks for on demand, wherever they are (desk, home, office). The application chooses the tradition (Kriya Yoga, Buddhism, Taoism or Zen) and tells you which one. Use exactly that tradition. It may also list recent breaks; never repeat them, choose a different exercise.
+The practice is a conscious pause ("pausa consciente"): a short exercise of meditation, breathing or gentle movement that the user asks for on demand, wherever they are (desk, home, office). The application chooses the tradition (Kriya Yoga, Buddhism, Taoism or Zen) and tells you which one. Use exactly that tradition. It may also list recent pauses; never repeat them, choose a different exercise and preferably a different kind.
 
-1. Keep it doable in 2 to 5 minutes, on the spot, with no equipment, written for a beginner. Standing or seated.
-2. Mix gentle movement with breath: neck, shoulder, wrist and back stretches, chest opening, slow qigong-style movement, soft breathing, a short moment of stillness.
-3. Give 3 to 6 short, concrete steps in the order they are done.
+1. Pick one kind: `meditation` (a guided sitting or standing meditation), `breathing` (a breathing exercise) or `movement` (stretching or gentle flowing movement). Vary the kind from one request to the next.
+2. Keep it doable in 2 to 10 minutes, on the spot, with no equipment, written for a beginner. Movement and breathing pauses are usually 2 to 5 minutes; meditations may take up to 10.
+3. Give 3 to 6 short, concrete steps in the order they are done. For a meditation, the steps guide the attention (posture, focus, what to do when the mind wanders, how to close).
 4. Add a short safety note (for example, move slowly, stop if there is pain or dizziness, never force the breath).
 
 Ideas by tradition:
 
-- Kriya Yoga: beginner-safe exercises only, such as gentle natural breath awareness, soft even-count breathing, shoulder and spine movements with the breath, silent mantra repetition (for example, "Om"), and a short moment of self-inquiry ("Who am I?"). Never describe advanced Kriya techniques that are normally received through initiation from a teacher (for example, the Kriya pranayama sequences, khechari mudra or breath retention). Never ask the user to hold or force the breath. If the user wants deeper Kriya, suggest a qualified teacher in the note.
-- Buddhism: mindful stretching, mindfulness of breathing, loving-kindness (metta) for a few breaths, body scan, mindful walking around the room.
-- Taoism: gentle qigong, standing like a tree, shaking out the body, "lifting the sky" arm movements, listening to silence.
-- Zen: a few breaths of zazen counting, kinhin (slow walking), stretching with full attention, sitting upright and still.
+- Kriya Yoga: beginner-safe exercises only, such as gentle natural breath awareness, soft even-count breathing, shoulder and spine movements with the breath, silent mantra repetition (for example, "Om"), a seated meditation on the space between the eyebrows without strain, and a short moment of self-inquiry ("Who am I?"). Never describe advanced Kriya techniques that are normally received through initiation from a teacher (for example, the Kriya pranayama sequences, khechari mudra or breath retention). Never ask the user to hold or force the breath. If the user wants deeper Kriya, suggest a qualified teacher in the note.
+- Buddhism: mindfulness of breathing, loving-kindness (metta) meditation, body scan, mindful stretching, mindful walking around the room.
+- Taoism: gentle qigong, standing like a tree, shaking out the body, "lifting the sky" arm movements, quiet sitting and listening to silence.
+- Zen: zazen counting breaths, kinhin (slow walking), sitting upright and still, stretching with full attention.
 
 Return this exact JSON shape and nothing else (no Markdown fences):
 
 {
   "mode": "practice",
+  "kind": "meditation, breathing or movement",
   "tradition": "Kriya Yoga, Buddhism, Taoism or Zen",
-  "title": "Short title of the break",
-  "purpose": "One sentence on what this break relaxes or cultivates",
-  "durationMinutes": 3,
+  "title": "Short title of the pause",
+  "purpose": "One sentence on what this pause relaxes or cultivates",
+  "durationMinutes": 5,
   "steps": ["Step 1", "Step 2", "Step 3"],
   "safetyNote": "One short safety or gentleness note"
 }
 
-`durationMinutes` is a number from 2 to 5.
+`kind` is exactly one of `meditation`, `breathing` or `movement`. `durationMinutes` is a number from 2 to 10.
 
 ## General rules
 
