@@ -92,21 +92,19 @@ function renderHome() {
         <p class="muted">Elige una opción. El guru la prepara solo cuando tú lo pides.</p>
       </div>
       <div class="home-cards">
-        <button class="panel home-card home-card-teaching" id="choose-teaching" type="button">
-          <span class="home-card-body">
-            <span class="eyebrow">Enseñanza del día</span>
-            <span class="home-card-title">Una enseñanza para tu día</span>
-            <span class="home-card-text">Sabiduría budista, hindú o taoísta, con una reflexión breve.</span>
-            <span class="home-card-cta">Abrir →</span>
-          </span>
+        <button class="panel home-card" id="choose-teaching" type="button">
+          <span class="home-card-glow" aria-hidden="true"></span>
+          <img class="home-card-icon" src="/icon-teaching.svg" alt="" width="132" height="132">
+          <span class="home-card-title">Enseñanza del día</span>
+          <span class="home-card-text">Una idea de sabiduría para llevar contigo hoy.</span>
+          <span class="home-card-cta">Abrir <span class="home-card-arrow" aria-hidden="true">→</span></span>
         </button>
-        <button class="panel home-card home-card-break" id="choose-break" type="button">
-          <span class="home-card-body">
-            <span class="eyebrow">Pausa activa</span>
-            <span class="home-card-title">Un ejercicio de 2 a 5 minutos</span>
-            <span class="home-card-text">Movimiento y respiración de Kriya Yoga, budismo, taoísmo o zen, cuando lo necesites.</span>
-            <span class="home-card-cta">Empezar →</span>
-          </span>
+        <button class="panel home-card" id="choose-break" type="button">
+          <span class="home-card-glow" aria-hidden="true"></span>
+          <img class="home-card-icon" src="/icon-break.svg" alt="" width="132" height="132">
+          <span class="home-card-title">Pausa consciente</span>
+          <span class="home-card-text">Detente unos minutos: medita, respira o estírate.</span>
+          <span class="home-card-cta">Empezar <span class="home-card-arrow" aria-hidden="true">→</span></span>
         </button>
       </div>
     </section>`;
@@ -165,8 +163,8 @@ function traditionTheme(tradition) {
   return match ? match[1] : 'buddhism';
 }
 
-// Day card ("tell the guru about your day") and advice slot, shared by the
-// teaching and break screens.
+// Day card ("tell the guru about your day") and advice slot, shown only on
+// the teaching screen.
 function dayCardHtml() {
   return `
       <article class="panel day-card">
@@ -230,11 +228,9 @@ function renderBreakView() {
     <section class="guru-layout">
       ${backButtonHtml()}
       <div id="practice-slot"></div>
-      ${dayCardHtml()}
     </section>`;
 
   bindBackButton();
-  bindDayCard();
   if (model.practice) renderPractice(model.practice);
   else renderBreakLoading();
   focusApp();
@@ -246,12 +242,12 @@ function renderBreakLoading() {
   slot.innerHTML = `
     <article class="panel practice-card practice-loading">
       <span class="spinner"></span>
-      <p>El guru está preparando tu pausa activa…</p>
+      <p>El guru está preparando tu pausa consciente…</p>
     </article>`;
 }
 
-// Asks for a new active break. Each call returns a different exercise; the
-// titles of recent breaks are sent so the guru does not repeat them.
+// Asks for a new conscious pause. Each call returns a different exercise; the
+// titles of recent pauses are sent so the guru does not repeat them.
 async function requestBreak() {
   if (model.breakLoading) return;
   model.breakLoading = true;
@@ -282,7 +278,7 @@ function renderBreakError(message) {
   if (!slot) return;
   slot.innerHTML = `
     <article class="panel practice-card">
-      <p class="eyebrow">Pausa activa</p>
+      <p class="eyebrow">Pausa consciente</p>
       <p class="muted">${escapeHtml(message)}</p>
       <button class="btn btn-ghost listen-btn" id="retry-practice" type="button">Intentar de nuevo</button>
     </article>`;
@@ -302,10 +298,10 @@ function renderPractice(practice) {
   slot.innerHTML = `
     <article class="panel practice-card" data-tradition="${escapeHtml(practice.traditionKey)}">
       <div class="teaching-head">
-        <span class="meta-chip">${escapeHtml(practice.tradition)} · ${escapeHtml(practice.durationMinutes)} min</span>
+        <span class="meta-chip">${escapeHtml(kindLabel(practice.kind))} · ${escapeHtml(practice.tradition)} · ${escapeHtml(practice.durationMinutes)} min</span>
         <button class="btn btn-ghost listen-btn" id="hear-practice" type="button">🔊 Escuchar</button>
       </div>
-      <p class="eyebrow">Pausa activa</p>
+      <p class="eyebrow">Pausa consciente</p>
       <h2 class="practice-title">${escapeHtml(practice.title)}</h2>
       ${practice.purpose ? `<p class="practice-purpose">${escapeHtml(practice.purpose)}</p>` : ''}
       <ol class="practice-steps">${practice.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join('')}</ol>
@@ -442,11 +438,21 @@ function teachingToSpeech(teaching) {
   return [teaching.title, teaching.teaching, teaching.reflection].filter(Boolean).join('. ');
 }
 
+const KIND_LABELS = {
+  meditation: 'Meditación',
+  breathing: 'Respiración',
+  movement: 'Movimiento'
+};
+
+function kindLabel(kind) {
+  return KIND_LABELS[kind] || KIND_LABELS.movement;
+}
+
 function practiceToSpeech(practice) {
   if (!practice) return '';
   const steps = (practice.steps || []).map((step, index) => `Paso ${index + 1}. ${step}`);
   return [
-    `Práctica del día. ${practice.title}`,
+    `Pausa consciente. ${practice.title}`,
     practice.purpose,
     `Dura unos ${practice.durationMinutes} minutos`,
     ...steps,

@@ -46,12 +46,12 @@ const server = http.createServer(async (request, response) => {
       const tradition = nextTradition();
       const prompt = [
         'Mode: practice.',
-        `Tradition for this break: ${TRADITION_LABELS[tradition]} (${tradition}).`,
-        'Give one short active break (pausa activa) the user can do right now, where they are.'
+        `Tradition for this pause: ${TRADITION_LABELS[tradition]} (${tradition}).`,
+        'Give one short conscious pause (pausa consciente) the user can do right now, where they are: a meditation, a breathing exercise or a gentle movement.'
       ];
       if (recentTitles.length) {
         prompt.push(
-          'Do not repeat these recent breaks, choose a different exercise:',
+          'Do not repeat these recent pauses. Choose a different exercise, and preferably a different kind (meditation, breathing or movement):',
           '<recent_titles>',
           ...recentTitles,
           '</recent_titles>'
