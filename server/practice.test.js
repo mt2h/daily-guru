@@ -10,7 +10,8 @@ const {
 const valid = (overrides) => JSON.stringify(Object.assign({
   title: 'Cuello suelto',
   purpose: 'Soltar la tensión del cuello',
-  durationMinutes: 3,
+  kind: 'meditation',
+  durationMinutes: 4,
   steps: ['Siéntate', 'Inclina la cabeza', 'Respira'],
   safetyNote: 'Detente si sientes dolor'
 }, overrides));
@@ -60,16 +61,24 @@ assert.deepStrictEqual(
 const practice = normalizePractice(valid(), 'kriya');
 assert.strictEqual(practice.tradition, 'Kriya Yoga');
 assert.strictEqual(practice.traditionKey, 'kriya');
-assert.strictEqual(practice.durationMinutes, 3);
+assert.strictEqual(practice.durationMinutes, 4);
+assert.strictEqual(practice.kind, 'meditation');
 assert.strictEqual(practice.steps.length, 3);
 
 // Normalization: model text wrapped in prose and fences is still parsed.
 assert.strictEqual(normalizePractice(`Aquí:\n\`\`\`json\n${valid()}\n\`\`\``, 'zen').title, 'Cuello suelto');
 
-// Normalization: duration clamped to 2-5, default 3 when missing.
-assert.strictEqual(normalizePractice(valid({ durationMinutes: 90 }), 'zen').durationMinutes, 5);
+// Normalization: duration clamped to 2-10, default 5 when missing.
+assert.strictEqual(normalizePractice(valid({ durationMinutes: 90 }), 'zen').durationMinutes, 10);
 assert.strictEqual(normalizePractice(valid({ durationMinutes: 0 }), 'zen').durationMinutes, 2);
-assert.strictEqual(normalizePractice(valid({ durationMinutes: 'x' }), 'zen').durationMinutes, 3);
+assert.strictEqual(normalizePractice(valid({ durationMinutes: 8 }), 'zen').durationMinutes, 8);
+assert.strictEqual(normalizePractice(valid({ durationMinutes: 'x' }), 'zen').durationMinutes, 5);
+
+// Normalization: kind must be one of the known kinds, otherwise movement.
+assert.strictEqual(normalizePractice(valid({ kind: 'breathing' }), 'zen').kind, 'breathing');
+assert.strictEqual(normalizePractice(valid({ kind: 'movement' }), 'zen').kind, 'movement');
+assert.strictEqual(normalizePractice(valid({ kind: 'dance' }), 'zen').kind, 'movement');
+assert.strictEqual(normalizePractice(valid({ kind: undefined }), 'zen').kind, 'movement');
 
 // Normalization: steps capped at six and blanks dropped.
 const capped = normalizePractice(valid({ steps: ['a', '', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] }), 'zen');

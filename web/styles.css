@@ -554,45 +554,98 @@ h1, h2, h3, p { margin-top: 0; }
   gap: 18px;
 }
 .home-card {
-  --art: none;
   position: relative;
   display: flex;
-  align-items: flex-end;
-  min-height: 360px;
-  padding: clamp(22px, 3vw, 32px);
-  text-align: left;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 340px;
+  padding: clamp(24px, 3vw, 36px);
+  text-align: center;
   color: var(--text);
   font: inherit;
   cursor: pointer;
   overflow: hidden;
-  background-image:
-    linear-gradient(180deg, rgba(8, 8, 18, 0.05) 0%, rgba(8, 8, 18, 0.55) 55%, rgba(8, 8, 18, 0.92) 100%),
-    var(--art);
-  background-size: cover;
-  background-position: left center;
-  background-repeat: no-repeat;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(162, 89, 255, 0.16), transparent 62%),
+    var(--surface);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
-.home-card:hover, .home-card:focus-visible {
-  transform: translateY(-3px);
-  border-color: var(--primary);
+.home-card-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 28%, rgba(196, 167, 255, 0.34), transparent 65%);
+  transition: opacity 0.3s ease;
 }
-.home-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.home-card-teaching { --art: url("budism.png"); }
-.home-card-break    { --art: url("hinduism.png"); }
-.home-card-body { display: grid; gap: 8px; }
+.home-card-icon {
+  width: 132px;
+  height: 132px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 8px 22px rgba(162, 89, 255, 0.45));
+  transition: transform 0.35s ease, filter 0.35s ease;
+}
 .home-card-title {
-  font-size: clamp(1.3rem, 2.4vw, 1.8rem);
+  font-size: clamp(1.4rem, 2.6vw, 1.9rem);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.02em;
 }
-.home-card-text { color: #d9d2ee; line-height: 1.55; }
-.home-card-cta { margin-top: 6px; color: var(--accent); font-weight: 700; }
+.home-card-text {
+  max-width: 28ch;
+  color: #d9d2ee;
+  line-height: 1.55;
+}
+.home-card-cta {
+  margin-top: 8px;
+  color: var(--accent);
+  font-weight: 700;
+}
+.home-card-arrow {
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+
+.home-card:hover,
+.home-card:focus-visible,
+.home-card:active {
+  transform: translateY(-5px);
+  border-color: var(--primary);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.5), 0 0 34px rgba(162, 89, 255, 0.35);
+}
+.home-card:hover .home-card-glow,
+.home-card:focus-visible .home-card-glow,
+.home-card:active .home-card-glow { opacity: 1; }
+.home-card:hover .home-card-icon,
+.home-card:focus-visible .home-card-icon,
+.home-card:active .home-card-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 10px 30px rgba(196, 167, 255, 0.7));
+  animation: home-icon-float 3s ease-in-out infinite;
+}
+.home-card:hover .home-card-arrow,
+.home-card:focus-visible .home-card-arrow,
+.home-card:active .home-card-arrow { transform: translateX(6px); }
+.home-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+@keyframes home-icon-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-card, .home-card-glow, .home-card-icon, .home-card-arrow { transition: none; }
+  .home-card:hover, .home-card:focus-visible, .home-card:active { transform: none; }
+  .home-card:hover .home-card-icon,
+  .home-card:focus-visible .home-card-icon,
+  .home-card:active .home-card-icon { animation: none; transform: none; }
+}
 
 @media (max-width: 760px) {
   .home-cards { grid-template-columns: 1fr; }
-  .home-card { min-height: 280px; }
+  .home-card { min-height: 300px; }
 }
 
 .busy-overlay {

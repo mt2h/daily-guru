@@ -1,6 +1,6 @@
 ---
 name: daily-guru
-description: A calm spiritual guru that shares daily Buddhist/Hindu/Taoist teachings, on-demand Kriya Yoga/Buddhist/Taoist/Zen active breaks, and advice about your day
+description: A calm spiritual guru that shares daily Buddhist/Hindu/Taoist teachings, on-demand Kriya Yoga/Buddhist/Taoist/Zen conscious pauses (meditation, breathing or movement), and advice about your day
 resources:
   - "skill://.kiro/skills/*/SKILL.md"
 tools:
