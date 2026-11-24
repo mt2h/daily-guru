@@ -9,6 +9,6 @@
   "scripts": {
     "dev": "node server/index.js",
     "start": "node server/index.js",
-    "check": "node --check server/index.js && node --check server/acp-client.js && node --check web/app.js"
+    "check": "node --check server/index.js && node --check server/acp-client.js && node --check server/practice.js && node --check server/text.js && node --check web/app.js && node server/practice.test.js"
   }
 }

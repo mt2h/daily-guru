@@ -4,6 +4,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { AcpClient } = require('./acp-client');
+const { parseJsonObject, cleanText } = require('./text');
+const { TRADITION_LABELS, dateKey, normalizePractice, createPracticeCache } = require('./practice');
 
 const projectRoot = path.resolve(__dirname, '..');
 const webRoot = path.join(projectRoot, 'web');
@@ -14,6 +16,7 @@ const acp = new AcpClient({
   agent: 'daily-guru',
   command: process.env.KIRO_CLI_PATH
 });
+const getDailyPractice = createPracticeCache();
 
 const server = http.createServer(async (request, response) => {
   setSecurityHeaders(response);
@@ -34,6 +37,23 @@ const server = http.createServer(async (request, response) => {
         'Return only the teaching JSON object defined in the daily-guidance skill.'
       ].join('\n'));
       return sendJson(response, 200, { teaching: normalizeTeaching(result.text) });
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/practice') {
+      assertLocalOrigin(request);
+      const today = new Date();
+      const practice = await getDailyPractice(today, async (tradition) => {
+        const result = await acp.prompt([
+          'Mode: practice.',
+          `Tradition of the day: ${TRADITION_LABELS[tradition]} (${tradition}).`,
+          `Date: ${dateKey(today)}.`,
+          'Give one short daily practice the user can do today to move along the path toward awakening.',
+          'Respond in Spanish unless the user clearly prefers English.',
+          'Return only the practice JSON object defined in the daily-guidance skill.'
+        ].join('\n'));
+        return normalizePractice(result.text, tradition);
+      });
+      return sendJson(response, 200, { practice });
     }
 
     if (request.method === 'POST' && url.pathname === '/api/advice') {
@@ -75,18 +95,6 @@ server.listen(port, host, () => {
 
 // --- Response normalization ---
 
-function parseJsonObject(rawText) {
-  const text = String(rawText || '').trim();
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start === -1 || end <= start) return {};
-  try {
-    return JSON.parse(text.slice(start, end + 1));
-  } catch (error) {
-    return {};
-  }
-}
-
 function normalizeTeaching(rawText) {
   const raw = parseJsonObject(rawText);
   const teaching = cleanText(raw.teaching, 1200);
@@ -116,11 +124,6 @@ function normalizeAdvice(rawText) {
     advice,
     closing: cleanText(raw.closing, 400)
   };
-}
-
-function cleanText(value, maximumLength) {
-  if (typeof value !== 'string') return '';
-  return value.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, maximumLength);
 }
 
 // --- HTTP helpers ---
