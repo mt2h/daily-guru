@@ -163,8 +163,8 @@ function traditionTheme(tradition) {
   return match ? match[1] : 'buddhism';
 }
 
-// Day card ("tell the guru about your day") and advice slot, shared by the
-// teaching and break screens.
+// Day card ("tell the guru about your day") and advice slot, shown only on
+// the teaching screen.
 function dayCardHtml() {
   return `
       <article class="panel day-card">
@@ -228,11 +228,9 @@ function renderBreakView() {
     <section class="guru-layout">
       ${backButtonHtml()}
       <div id="practice-slot"></div>
-      ${dayCardHtml()}
     </section>`;
 
   bindBackButton();
-  bindDayCard();
   if (model.practice) renderPractice(model.practice);
   else renderBreakLoading();
   focusApp();

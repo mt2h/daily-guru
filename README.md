@@ -25,7 +25,7 @@ No `npm install` is required: the project uses only modules bundled with Node.js
 1. You open the app. A home screen shows two cards, "Daily teaching" and "Conscious pause". Nothing is requested from Kiro yet.
 2. You choose one. Only then does the local server start `kiro-cli acp --agent daily-guru` (if needed) and request that content.
 3. The teaching or the conscious pause appears. Reading aloud only happens when you press "Listen".
-4. Below it you can tell the guru about your day, by voice or text.
+4. Below the teaching (not the pause) you can tell the guru about your day, by voice or text.
 5. The guru returns gentle, practical advice connected to the wisdom.
 6. "Back" returns to the home screen; content already generated is kept and not requested again.
 
